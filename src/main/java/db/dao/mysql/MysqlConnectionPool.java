@@ -27,7 +27,7 @@ public class MysqlConnectionPool {
         return ds;
     }
 
-    protected static Connection getConnection() throws SQLException {
+    public static Connection getConnection() throws SQLException {
         return getPooledConnectionDataSource().getConnection();
     }
 

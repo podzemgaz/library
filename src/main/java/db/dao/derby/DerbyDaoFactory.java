@@ -1,5 +1,6 @@
 package db.dao.derby;
 
+import db.dao.BookDao;
 import db.dao.DAOFactory;
 import db.dao.UserDao;
 import db.entity.Entity;
@@ -12,5 +13,10 @@ public class DerbyDaoFactory extends DAOFactory {
             userDao = new DerbyUserDao();
         }
         return userDao;
+    }
+
+    @Override
+    public BookDao getBookDao() {
+        return null;
     }
 }

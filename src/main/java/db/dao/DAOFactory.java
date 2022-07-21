@@ -38,4 +38,5 @@ public abstract class DAOFactory {
         return instance;
     }
     public abstract UserDao getUserDao();
+    public abstract BookDao getBookDao();
 }

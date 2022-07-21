@@ -19,21 +19,25 @@ public class MysqlUserDao extends AbstractDao implements UserDao {
     @Override
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
-        try (Connection con = MysqlConnectionPool.getConnection()) {
-            Statement stmt = con.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM library.user;");
-            rs.next();
+        try (Connection con = MysqlConnectionPool.getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM library.user")) {
             while (rs.next()) {
                 User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setLogin(rs.getString("login"));
+                user.setPassword(rs.getString("password"));
+                user.setRole_id(rs.getInt("role_id"));
+                users.add(user);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return users;
     }
 
     @Override
-    public User findUserByLogin(String login) throws DaoException {
+    public User findUserByLogin(String login) {
         return null;
     }
 
@@ -68,7 +72,7 @@ public class MysqlUserDao extends AbstractDao implements UserDao {
 
     public void checkConnection() throws DaoException {
 
-        try (Connection con = MysqlConnectionPool.getConnection();) {
+        try (Connection con = MysqlConnectionPool.getConnection()) {
             System.out.println("connected " + con);
         } catch (SQLException e) {
             throw new DaoException(e.getMessage() + ", cause: " + e.getCause());
