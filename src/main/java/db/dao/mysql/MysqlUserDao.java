@@ -14,6 +14,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MysqlUserDao extends AbstractDao implements UserDao {
+    private static MysqlUserDao instance;
+    private MysqlUserDao() {
+    }
+
+    public static MysqlUserDao getInstance() {
+        if (instance == null) {
+            instance = new MysqlUserDao();
+        }
+        return instance;
+    }
+
     private static final String SQL_INSERT_USER = "INSERT INTO user (login, password) VALUES (?, ?)";
 
     @Override

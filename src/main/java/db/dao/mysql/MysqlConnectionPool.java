@@ -2,7 +2,6 @@ package db.dao.mysql;
 
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
-import db.dao.DaoException;
 import resource.MyConfigManager;
 
 import javax.sql.DataSource;
