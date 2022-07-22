@@ -1,5 +1,7 @@
 package db.dao.mysql;
 
+import db.constants.DBConstants;
+import db.constants.DBUserConstants;
 import db.dao.AbstractDao;
 import db.dao.DaoException;
 import db.dao.UserDao;
@@ -25,68 +27,120 @@ public class MysqlUserDao extends AbstractDao implements UserDao {
         return instance;
     }
 
-    private static final String SQL_INSERT_USER = "INSERT INTO user (login, password) VALUES (?, ?)";
-
     @Override
-    public List<User> findAll() {
+    public List<User> findAll() throws DaoException {
         List<User> users = new ArrayList<>();
         try (Connection con = MysqlConnectionPool.getConnection();
              Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM library.user")) {
+             ResultSet rs = stmt.executeQuery(DBUserConstants.GET_ALL_USERS)) {
             while (rs.next()) {
-                User user = new User();
-                user.setId(rs.getInt("id"));
-                user.setLogin(rs.getString("login"));
-                user.setPassword(rs.getString("password"));
-                user.setRole_id(rs.getInt("role_id"));
-                users.add(user);
+                users.add(mapUser(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DaoException(e.getMessage(), e.getCause());
+        }
+        return users;
+    }
+    @Override
+    public List<User> findByLoginUsePattern(String pattern) throws DaoException {
+        List<User> users = new ArrayList<>();
+        try (Connection con = MysqlConnectionPool.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(DBUserConstants.FIND_USER_BY_LOGIN_USE_PATTERN)) {
+            pstmt.setString(1, "%" + escapeForLike(pattern) +"%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    users.add(mapUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DaoException(e.getMessage(), e.getCause());
         }
         return users;
     }
 
     @Override
-    public User findUserByLogin(String login) {
-        return null;
-    }
-
-    public static boolean insertUser(User user) throws DaoException {
-        Connection con = null;
-        PreparedStatement stmt = null;
-
-        try {
-            con = MysqlConnectionPool.getConnection();
-            stmt = con.prepareStatement(SQL_INSERT_USER, Statement.RETURN_GENERATED_KEYS);
-
-            stmt.setString(1, user.getLogin());
-            stmt.setString(2, user.getPassword());
-            int count = stmt.executeUpdate();
-            if (count > 0) {
-                try (ResultSet rs = con.prepareStatement("select * from user").executeQuery()){
-                    if (rs.next()) {
-                        /*user.setId(rs.getInt(1));
-                        user.setCreateTime(rs.getDate(5));*/
-                    }
+    public User findByLogin(String login) throws DaoException {
+        User user = new User();
+        try (Connection con = MysqlConnectionPool.getConnection();
+             PreparedStatement pstmt = con.prepareStatement(DBUserConstants.FIND_USER_BY_LOGIN)) {
+            pstmt.setString(1, login);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    user = mapUser(rs);
                 }
             }
         } catch (SQLException e) {
             throw new DaoException(e.getMessage(), e.getCause());
+        }
+        return user;
+    }
+
+    private User mapUser(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.setId(rs.getInt(DBConstants.ID));
+        user.setLogin(rs.getString(DBUserConstants.LOGIN));
+        user.setPassword(rs.getString(DBUserConstants.PASSWORD));
+        user.setRole_id(rs.getInt(DBUserConstants.ROLE_ID));
+        return user;
+    }
+
+    public boolean insertUser(User user) throws DaoException {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            con = MysqlConnectionPool.getConnection();
+            con.setAutoCommit(false);
+            addUser(user, con);
+            con.commit();
+        } catch (SQLException e) {
+            if (con != null) {
+                rollback(con);
+            }
+            if (e.getMessage().startsWith("Duplicate entry")) {
+                return false;
+            } else
+            throw new DaoException(e.getMessage(), e.getCause());
         } finally {
-            close(stmt);
+            close(rs);
+            close(pstmt);
             close(con);
         }
 
         return true;
     }
 
-    public void checkConnection() throws DaoException {
-
-        try (Connection con = MysqlConnectionPool.getConnection()) {
-            System.out.println("connected " + con);
-        } catch (SQLException e) {
-            throw new DaoException(e.getMessage() + ", cause: " + e.getCause());
+    private void addUser(User user, Connection con) throws SQLException {
+        try (PreparedStatement pstmt = con.prepareStatement(DBUserConstants.SQL_INSERT_USER, Statement.RETURN_GENERATED_KEYS)){
+            int k = 0;
+            pstmt.setString(++k, user.getLogin());
+            pstmt.setString(++k, user.getPassword());
+            int count = pstmt.executeUpdate();
+            if (count > 0) {
+                try (Statement stmt = con.createStatement();
+                     ResultSet rs = pstmt.getGeneratedKeys()){
+                    if (rs.next()) {
+                        int id = rs.getInt(1);
+                        user.setId(id);
+                        try (ResultSet rs1 = stmt.executeQuery(DBUserConstants.SELECT_ROLE_BY_USER_ID + id)) {
+                            if (rs1.next()) {
+                                user.setRole_id(rs1.getInt(DBUserConstants.ROLE_ID));
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
+
+    private void rollback(Connection con) {
+        try {
+            con.rollback();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+
 }

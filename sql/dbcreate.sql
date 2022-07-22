@@ -85,9 +85,11 @@ CREATE TABLE IF NOT EXISTS `library`.`user_has_book` (
     REFERENCES `library`.`book` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
+
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
+ALTER TABLE user_has_book ADD UNIQUE (user_id, book_id);
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;

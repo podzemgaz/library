@@ -1,15 +1,9 @@
 //demonstration
-import db.dao.BookDao;
-import db.dao.DAOFactory;
-import db.dao.DaoException;
-import db.dao.UserDao;
-import db.entity.Book;
-import db.entity.Entity;
-import db.entity.User;
+import db.dao.*;
+import db.entity.*;
 import resource.MyConfigManager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Demo {
@@ -29,16 +23,44 @@ public class Demo {
         try {
             userDao.checkConnection();
             List<User> users = userDao.findAll();
-            for (User u : users) {
-                System.out.println(u);
-            }
+            printList(users);
             List<Book> books = bookDao.findAll();
-            for (Book book : books) {
-                System.out.println(book);
+            printList(books);
+
+            users = userDao.findByLoginUsePattern("client");
+            printList(users);
+
+            User user = new User();
+            user.setLogin("goga");
+            user.setPassword("shvili");
+
+            if (userDao.insertUser(user)) {
+                System.out.println("inserted user: " + user);
             }
+            users = userDao.findAll();
+            printList(users);
+
+
+            UserHasBookDao userHasBookDao = daoFactory.getUserHasBookDao();
+            List<UserHasBook> userHasBooks = userHasBookDao.findAll();
+            printList(userHasBooks);
+
+            user = userDao.findByLogin("goga");
+            UserCard userCard = new UserCard();
+            userCard.setId(user.getId());
+            userCard.setBooks(userHasBookDao.getBooksIdsByUserId(userCard.getId()));
+
+            System.out.println(userCard);
+
 
         } catch (DaoException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static <T extends Entity> void printList(List<T> users) {
+        for (T t : users) {
+            System.out.println(t);
         }
     }
 }

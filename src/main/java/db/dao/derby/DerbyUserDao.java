@@ -1,5 +1,6 @@
 package db.dao.derby;
 
+import db.dao.DaoException;
 import db.dao.UserDao;
 import db.entity.Entity;
 import db.entity.User;
@@ -13,13 +14,21 @@ public class DerbyUserDao implements UserDao {
     }
 
     @Override
-    public User findUserByLogin(String login) {
-        System.out.println("derby find user");
+    public void checkConnection() {
+    }
+
+    @Override
+    public List<User> findByLoginUsePattern(String pattern) {
         return null;
     }
 
     @Override
-    public void checkConnection() {
+    public User findByLogin(String pattern) throws DaoException {
+        return null;
+    }
 
+    @Override
+    public boolean insertUser(User user) throws DaoException {
+        return false;
     }
 }
